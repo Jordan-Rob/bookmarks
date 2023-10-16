@@ -2,7 +2,7 @@ from django.http import HttpResponse
 from django.shortcuts import render
 from django.contrib.auth import authenticate, login
 from django.contrib.auth.decorators import login_required
-from .forms import LoginForm
+from .forms import LoginForm, UserRegistrationForm
 
 
 # Create your views here.
@@ -11,7 +11,9 @@ def user_login(request):
         form = LoginForm(data=request.POST)
         if form.is_valid():
             clean_form = form.cleaned_data
-            user = authenticate(username=clean_form["username"], password=clean_form["password"])
+            user = authenticate(
+                username=clean_form["username"], password=clean_form["password"]
+            )
 
             if user is not None:
                 if user.is_active:
@@ -29,4 +31,21 @@ def user_login(request):
 
 @login_required
 def dashboard(request):
-    return render(request, 'account/dashboard.html', {'section': 'dashboard'})
+    return render(request, "account/dashboard.html", {"section": "dashboard"})
+
+
+def register(request):
+    if request.method == "POST":
+        user_form = UserRegistrationForm(data=request.POST)
+        if user_form.is_valid():
+            # create new user without saving
+            new_user = user_form.save(commit=False)
+            # set the password using set_password method
+            new_user.set_password(user_form.cleaned_data["password"])
+            # save the User object
+            new_user.save()
+
+            return render(request, "account/register_done.html", {"new_user": new_user})
+    else:
+        user_form = UserRegistrationForm()
+    return render(request, "account/register.html", {"user_form": user_form})
